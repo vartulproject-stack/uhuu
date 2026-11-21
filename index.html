@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>DARLO 👄</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #08070a;
+      --text-main: #f4f1f6;
+      --text-muted: #b5aebc;
+      --accent-crimson: #e11d48;
+      --accent-lavender: #a855f7;
+      --accent-blue: #3b82f6;
+      --glass-bg: rgba(18, 15, 24, 0.72);
+      --glass-border: rgba(255, 255, 255, 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100dvh;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      transition: background 1s ease;
+    }
+
+    /* Dynamic Ambient Background Layers */
+    #ambient-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background: radial-gradient(circle at 50% 45%, rgba(180, 20, 50, 0.16) 0%, #08070a 75%);
+      transition: background 1.2s ease, opacity 1s ease;
+      pointer-events: none;
+    }
+
+    body.mood-crimson #ambient-bg {
+      background: radial-gradient(circle at 50% 45%, rgba(190, 18, 60, 0.2) 0%, #08070a 75%);
+    }
+
+    body.mood-lavender #ambient-bg {
+      background: radial-gradient(circle at 50% 40%, rgba(147, 51, 234, 0.26) 0%, #0b0612 78%);
+    }
+
+    body.mood-airforce #ambient-bg {
+      background: radial-gradient(circle at 50% 40%, rgba(37, 99, 235, 0.2) 0%, #060913 78%);
+    }
+
+    body.mood-finale #ambient-bg {
+      background: radial-gradient(circle at 50% 45%, rgba(225, 29, 72, 0.22) 0%, rgba(126, 34, 206, 0.14) 45%, #08070a 82%);
+    }
+
+    /* Layer 1 Fullscreen Image */
+    #layer-1-bg {
+      position: fixed;
+      inset: 0;
+      background-image: linear-gradient(to bottom, rgba(8, 7, 10, 0.42), rgba(8, 7, 10, 0.72)), url('vv.jpg');
+      background-size: cover;
+      background-position: center;
+      z-index: 1;
+      transition: opacity 0.9s ease, transform 1.2s ease;
+    }
+
+    #layer-1-bg.hidden {
+      opacity: 0;
+      transform: scale(1.06);
+      pointer-events: none;
+    }
+
+    /* Top Bar: Progress & Audio Control */
+    .top-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 20;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.6s ease;
+    }
+
+    .top-bar.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .progress-track {
+      flex: 1;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 10%;
+      background: linear-gradient(90deg, #e11d48, #a855f7);
+      border-radius: 99px;
+      transition: width 0.5s ease;
+    }
+
+    .step-badge {
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      font-weight: 600;
+      min-width: 42px;
+      text-align: right;
+    }
+
+    .audio-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: var(--text-main);
+      padding: 6px 12px;
+      border-radius: 99px;
+      font-size: 12px;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      transition: background 0.25s ease;
+    }
+
+    .audio-btn:hover {
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    /* Main Container & Slides */
+    .stage {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 460px;
+      padding: 24px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100dvh;
+    }
+
+    .layer {
+      position: absolute;
+      width: calc(100% - 40px);
+      max-width: 420px;
+      opacity: 0;
+      transform: translateY(22px) scale(0.98);
+      pointer-events: none;
+      transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1), transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+      text-align: center;
+    }
+
+    .layer.active {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+      position: relative;
+    }
+
+    /* Layer 1 Hero Gatekeeper */
+    .gate-btn {
+      background: rgba(12, 10, 16, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(10px);
+      padding: 22px 44px;
+      border-radius: 999px;
+      cursor: pointer;
+      box-shadow: 0 0 40px rgba(225, 29, 72, 0.35);
+      animation: pulseGlow 2.4s infinite ease-in-out;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .gate-btn:active {
+      transform: scale(0.96);
+    }
+
+    .gate-title {
+      font-family: 'Cinzel', serif;
+      font-size: 34px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      color: #ffffff;
+      text-shadow: 0 2px 18px rgba(225, 29, 72, 0.65);
+    }
+
+    .gate-sub {
+      display: block;
+      margin-top: 8px;
+      font-size: 12px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.78);
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 28px rgba(225, 29, 72, 0.32); }
+      50% { box-shadow: 0 0 52px rgba(225, 29, 72, 0.6); }
+    }
+
+    /* Content Cards */
+    .card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: 24px;
+      padding: 32px 24px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
+    }
+
+    .card.lavender-card {
+      border-color: rgba(168, 85, 247, 0.35);
+      box-shadow: 0 24px 70px rgba(126, 34, 206, 0.28);
+      background: rgba(22, 13, 34, 0.8);
+    }
+
+    .card.airforce-card {
+      border-color: rgba(59, 130, 246, 0.32);
+      box-shadow: 0 24px 70px rgba(29, 78, 216, 0.22);
+    }
+
+    .card.finale-card {
+      border-color: rgba(244, 63, 94, 0.38);
+      box-shadow: 0 28px 80px rgba(225, 29, 72, 0.3);
+    }
+
+    .tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      padding: 5px 12px;
+      border-radius: 99px;
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .lavender-card .tag {
+      color: #d8b4fe;
+      background: rgba(168, 85, 247, 0.16);
+    }
+
+    .airforce-card .tag {
+      color: #93c5fd;
+      background: rgba(59, 130, 246, 0.16);
+    }
+
+    .quote-text {
+      font-size: 19px;
+      line-height: 1.65;
+      font-weight: 500;
+      color: var(--text-main);
+      word-break: break-word;
+    }
+
+    .quote-text.bold-caps {
+      font-size: 17.5px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      line-height: 1.6;
+    }
+
+    /* Layer 3 Photo Styling */
+    .photo-frame {
+      width: 100%;
+      max-height: 52dvh;
+      border-radius: 18px;
+      overflow: hidden;
+      margin-bottom: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6);
+    }
+
+    .photo-frame img {
+      width: 100%;
+      height: 100%;
+      max-height: 52dvh;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* Layer 6 Scene Breakdown */
+    .scene-beats {
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      font-size: 15.5px;
+      line-height: 1.6;
+      color: #e9d5ff;
+    }
+
+    .scene-highlight {
+      margin-top: 6px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: rgba(168, 85, 247, 0.14);
+      border-left: 3px solid #c084fc;
+      font-weight: 600;
+      color: #ffffff;
+    }
+
+    /* Finale Styling */
+    .finale-sign {
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+      font-size: 20px;
+      font-weight: 700;
+      color: #fda4af;
+      line-height: 1.6;
+    }
+
+    /* Action Buttons */
+    .next-btn {
+      margin-top: 26px;
+      width: 100%;
+      padding: 15px 24px;
+      border: none;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #be123c, #881337);
+      color: #ffffff;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      box-shadow: 0 10px 25px rgba(190, 18, 60, 0.35);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+    }
+
+    .next-btn:active {
+      transform: scale(0.97);
+    }
+
+    .lavender-card .next-btn {
+      background: linear-gradient(135deg, #7e22ce, #581c87);
+      box-shadow: 0 10px 25px rgba(126, 34, 206, 0.38);
+    }
+
+    .airforce-card .next-btn {
+      background: linear-gradient(135deg, #1d4ed8, #1e3a8a);
+      box-shadow: 0 10px 25px rgba(29, 78, 216, 0.35);
+    }
+
+    .replay-btn {
+      margin-top: 22px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: var(--text-main);
+      padding: 12px 22px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body class="mood-crimson">
+
+  <!-- Background Audio -->
+  <audio id="bg-music" src="v.mp3" loop preload="auto"></audio>
+
+  <!-- Ambient Mood Layer -->
+  <div id="ambient-bg"></div>
+
+  <!-- Layer 1 Background Photo (vv.jpg) -->
+  <div id="layer-1-bg"></div>
+
+  <!-- Top Progress & Music Toggle -->
+  <div class="top-bar" id="top-bar">
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+    <span class="step-badge" id="step-badge">1 / 10</span>
+    <button class="audio-btn" id="audio-toggle" type="button">🔊 Music</button>
+  </div>
+
+  <!-- Main Stage -->
+  <main class="stage">
+
+    <!-- LAYER 1 -->
+    <section class="layer active" data-layer="1" data-mood="crimson">
+      <button class="gate-btn" id="start-btn" type="button">
+        <span class="gate-title">DARLO 👄</span>
+        <span class="gate-sub">Tap to unlock</span>
+      </button>
+    </section>
+
+    <!-- LAYER 2 -->
+    <section class="layer" data-layer="2" data-mood="crimson">
+      <div class="card">
+        <span class="tag">Chapter 02</span>
+        <p class="quote-text">Aap hi toh mere khade hone ki wajah h Aap hi to wo h jisse hum poori raat jage !😝</p>
+        <button class="next-btn" onclick="goToLayer(3)">Aage badho 👄</button>
+      </div>
+    </section>
+
+    <!-- LAYER 3 -->
+    <section class="layer" data-layer="3" data-mood="crimson">
+      <div class="card">
+        <span class="tag">Chapter 03</span>
+        <div class="photo-frame">
+          <img src="v.jpg" alt="Yours" />
+        </div>
+        <p class="quote-text">ye lijiye poore body pr aapka haq h 😝👄</p>
+        <button class="next-btn" onclick="goToLayer(4)">Next 🖤</button>
+      </div>
+    </section>
+
+    <!-- LAYER 4 -->
+    <section class="layer" data-layer="4" data-mood="crimson">
+      <div class="card">
+        <span class="tag">Chapter 04</span>
+        <p class="quote-text">Mera bs chale to hum abi se hi aapko apne khane pr rub kre taaki mere har khane me bs aapka swad aaye or kuch nhi 👅👄</p>
+        <button class="next-btn" onclick="goToLayer(5)">Aur paas aao 🔥</button>
+      </div>
+    </section>
+
+    <!-- LAYER 5 -->
+    <section class="layer" data-layer="5" data-mood="crimson">
+      <div class="card">
+        <span class="tag">Chapter 05</span>
+        <p class="quote-text">Aap koi chhota sa pal nahi ho... aap woh nasha ho jo dheere-dheere poore dimaag aur dil par chha jaata hai. 🖤</p>
+        <button class="next-btn" onclick="goToLayer(6)">Kamre mein chalo... 🌚</button>
+      </div>
+    </section>
+
+    <!-- LAYER 6 (Dim Lavender Room Scene) -->
+    <section class="layer" data-layer="6" data-mood="lavender">
+      <div class="card lavender-card">
+        <span class="tag">Dim Lavender Room</span>
+        <div class="scene-beats">
+          <p>Dim lavender light... hum aur aap ek band room mein — gate band, windows band, aur bed par phool hi phool.</p>
+          <p>Hum aapki aankhon par kapda baandh dein, aapke haath peeche karke baandh dein... aur phir peeche se aapko bahut tez pakad lein, aapke kaan ke paas sirf meri saansein...</p>
+          <div class="scene-highlight">
+            “Darlo, aapke upar sirf mera haq h aur mere upar aapka... aur phir dheere-dheere aapki unboxing 🌚👄👅”
+          </div>
+        </div>
+        <button class="next-btn" onclick="goToLayer(7)">Aage dekho 🖤</button>
+      </div>
+    </section>
+
+    <!-- LAYER 7 -->
+    <section class="layer" data-layer="7" data-mood="airforce">
+      <div class="card">
+        <span class="tag">Promise & Trust</span>
+        <p class="quote-text bold-caps">AAP SIRF MERI KHWAHISH NHI H AAP MERI WO BHAROSHA H JISKE SAAYH HUM APNA HAR PAL DEKHNA CHATE H OR AAP POORA TRUST KR SAKTI H KBI V BREAK NOI KRNEGE 🌚😝</p>
+        <button class="next-btn" onclick="goToLayer(8)">Hamara Sapna ✈️</button>
+      </div>
+    </section>
+
+    <!-- LAYER 8 -->
+    <section class="layer" data-layer="8" data-mood="airforce">
+      <div class="card airforce-card">
+        <span class="tag">Our Sky • Air Force</span>
+        <p class="quote-text">Aasmaan chhoone ka sapna hum dono ka hai, Air Force mein saath jaane ki zidd bhi... aur is poore safar mein mera sabse bada sahara aap ho. ✈️🖤</p>
+        <button class="next-btn" onclick="goToLayer(9)">Aakhiri Darwaza 🔥</button>
+      </div>
+    </section>
+
+    <!-- LAYER 9 -->
+    <section class="layer" data-layer="9" data-mood="finale">
+      <div class="card">
+        <span class="tag">Final Threshold</span>
+        <p class="quote-text">Aakhiri darwaza kholne se pehle ek baat samajh lo—ab har pal, har saans aur har haq sirf hum dono ka hai. 🌚🔥</p>
+        <button class="next-btn" onclick="goToLayer(10)">Unlock Finale 💋</button>
+      </div>
+    </section>
+
+    <!-- LAYER 10 (Grand Finale) -->
+    <section class="layer" data-layer="10" data-mood="finale">
+      <div class="card finale-card">
+        <span class="tag">Forever Yours</span>
+        <p class="quote-text">Kahani abi khatam nhi hoti meri jaan abi to asli khel bacha h jo ki jaldi hone wala h 😝👅👄🌚</p>
+        <div class="finale-sign">
+          Yours BBY👄💋<br />
+          I LOVE YOU SO MUCH 😘👄
+        </div>
+        <button class="replay-btn" onclick="goToLayer(1)">↺ Phir se shuru karein</button>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    const totalLayers = 10;
+    const layers = document.querySelectorAll('.layer');
+    const bgMusic = document.getElementById('bg-music');
+    const audioToggle = document.getElementById('audio-toggle');
+    const topBar = document.getElementById('top-bar');
+    const progressFill = document.getElementById('progress-fill');
+    const stepBadge = document.getElementById('step-badge');
+    const layer1Bg = document.getElementById('layer-1-bg');
+    const startBtn = document.getElementById('start-btn');
+
+    let musicUnlocked = false;
+
+    function startMusicOnLayer2() {
+      if (musicUnlocked) return;
+      bgMusic.currentTime = 0;
+      bgMusic.play().then(() => {
+        musicUnlocked = true;
+        audioToggle.textContent = '🔊 Music';
+      }).catch(() => {
+        audioToggle.textContent = '🔇 Play';
+      });
+    }
+
+    audioToggle.addEventListener('click', () => {
+      if (bgMusic.paused) {
+        bgMusic.play().then(() => {
+          musicUnlocked = true;
+          audioToggle.textContent = '🔊 Music';
+        }).catch(() => {
+          audioToggle.textContent = '🔇 Play';
+        });
+      } else {
+        bgMusic.pause();
+        audioToggle.textContent = '🔇 Muted';
+      }
+    });
+
+    startBtn.addEventListener('click', () => {
+      goToLayer(2);
+    });
+
+    function goToLayer(num) {
+      layers.forEach(layer => {
+        const layerNum = Number(layer.dataset.layer);
+        if (layerNum === num) {
+          layer.classList.add('active');
+          const mood = layer.dataset.mood || 'crimson';
+          document.body.className = 'mood-' + mood;
+        } else {
+          layer.classList.remove('active');
+        }
+      });
+
+      if (num === 1) {
+        layer1Bg.classList.remove('hidden');
+        topBar.classList.remove('visible');
+      } else {
+        layer1Bg.classList.add('hidden');
+        topBar.classList.add('visible');
+      }
+
+      if (num === 2) {
+        startMusicOnLayer2();
+      }
+
+      progressFill.style.width = `${(num / totalLayers) * 100}%`;
+      stepBadge.textContent = `${num} / ${totalLayers}`;
+    }
+  </script>
+</body>
+</html>
+  
